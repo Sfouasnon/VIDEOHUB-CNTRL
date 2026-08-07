@@ -5,6 +5,7 @@ import SwiftUI
 struct VideohubOnSetApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var store: RouterStore
+    @State private var bridge: ControlBridge
     private let developmentWindowSize: NSSize?
 
     init() {
@@ -77,6 +78,11 @@ struct VideohubOnSetApp: App {
         routerStore = RouterStore()
 #endif
         _store = State(initialValue: routerStore)
+#if DEBUG
+        _bridge = State(initialValue: ControlBridge(store: routerStore, defaults: qaDefaults))
+#else
+        _bridge = State(initialValue: ControlBridge(store: routerStore))
+#endif
     }
 
     var body: some Scene {
@@ -92,6 +98,7 @@ struct VideohubOnSetApp: App {
                 }
                 .task {
                     store.start()
+                    bridge.start()
                     await runDevelopmentRouteIfRequested()
                 }
         }
@@ -100,7 +107,7 @@ struct VideohubOnSetApp: App {
         .commands { VideohubCommands() }
 
         Settings {
-            SettingsView(store: store)
+            SettingsView(store: store, bridge: bridge)
                 .preferredColorScheme(.dark)
         }
     }

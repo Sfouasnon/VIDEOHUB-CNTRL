@@ -524,6 +524,89 @@ final class RouterStore {
         pendingSalvo = nil
     }
 
+    // MARK: - Surface controllers
+
+    /// Applies a set of crosspoints requested by a surface controller, without
+    /// touching the operator's on-screen selection.
+    ///
+    /// A surface key is a committed action — the operator already decided when
+    /// they pressed it — so this bypasses select/TAKE and the confirmation
+    /// sheet. It does not bypass lock or topology checks: those protect the
+    /// router, not the workflow.
+    ///
+    /// Returns `nil` on success, or a reason the request was refused. The
+    /// request is all-or-nothing; a key that half-fires leaves the router in a
+    /// state nobody asked for and is harder to notice than one that does not
+    /// fire at all.
+    @discardableResult
+    func applyRemoteRoute(_ requested: [ControlCrosspoint]) -> String? {
+        var salvo = Salvo(name: "Surface")
+        for crosspoint in requested {
+            guard let output = PortNumber(protocolIndex: crosspoint.output),
+                  let input = PortNumber(protocolIndex: crosspoint.input) else {
+                return "Crosspoint has a negative port index"
+            }
+            salvo.setCrosspoint(output: output, input: input)
+        }
+
+        guard salvo.isFireable else { return "No crosspoints" }
+
+        // Reject rather than silently trim: a deck key authored against a
+        // 40x40 that fires at a 12x12 is a misconfiguration the operator needs
+        // to see, not a partial take.
+        if salvo.hasPortsOutsideTopology(
+            inputCount: device.videoInputCount,
+            outputCount: device.videoOutputCount
+        ) {
+            return "Crosspoint is outside this router's \(device.videoInputCount)x"
+                + "\(device.videoOutputCount) topology"
+        }
+
+        if let reason = fireDisabledReason(for: salvo) { return reason }
+
+        if salvo.crosspoints.count == 1, let only = salvo.crosspoints.first {
+            // Single crosspoints take the route path so successive key presses
+            // are gated by the shorter pending-route timeout rather than the
+            // salvo one, which matters when an operator is punching sources.
+            performRemoteRoute(Route(output: only.output, input: only.input))
+        } else {
+            performSalvo(salvo)
+        }
+        return nil
+    }
+
+    private func performRemoteRoute(_ route: Route) {
+        let pending = PendingRoute(route: route)
+        pendingRoute = pending
+        schedulePendingTimeout(for: pending)
+
+        if isDemoMode {
+            Task { @MainActor [weak self] in
+                try? await Task.sleep(nanoseconds: 550_000_000)
+                self?.applyRoutes([
+                    route.output.protocolIndex: route.input.protocolIndex
+                ])
+            }
+        } else {
+            client.sendRoute(
+                outputIndex: route.output.protocolIndex,
+                inputIndex: route.input.protocolIndex
+            )
+        }
+    }
+
+    /// Fires a stored salvo by identifier, for a surface key bound to a macro.
+    /// Returns `nil` on success or a reason it was refused.
+    @discardableResult
+    func fireSalvo(id: UUID) -> String? {
+        guard let salvo = salvoStore.salvo(id: id, forRouter: routerIdentity) else {
+            return "No salvo with that identifier on this router"
+        }
+        if let reason = fireDisabledReason(for: salvo) { return reason }
+        performSalvo(salvo)
+        return nil
+    }
+
     func route(for output: PortNumber) -> PortNumber? {
         routes[output]
     }

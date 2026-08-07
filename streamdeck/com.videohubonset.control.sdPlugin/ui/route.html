@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<link rel="stylesheet" href="pi.css" />
+		<script src="sd-pi.js"></script>
+	</head>
+	<body>
+		<div class="status" id="status"><span class="dot"></span><span id="status-text">Connecting…</span></div>
+
+		<h2>Steps</h2>
+		<p class="hint">
+			Each press runs the current step, then advances to the next. One step is a plain routing key. Add a
+			crosspoint to drive several destinations from one press.
+		</p>
+		<div id="steps"></div>
+		<div class="row"><button id="add-step">Add step</button></div>
+
+		<h2>Appearance</h2>
+		<div class="row">
+			<label class="field" for="show-destination">Destination</label>
+			<span><input type="checkbox" id="show-destination" /> Show on key</span>
+		</div>
+
+		<h2>App</h2>
+		<div class="row">
+			<label class="field" for="port">Port</label>
+			<input type="number" id="port" min="1" max="65535" />
+			<button id="reconnect">Apply</button>
+		</div>
+		<p class="hint">
+			Must match Settings → Stream Deck &amp; Surface Control in the Videohub On-Set app. Shared by every key.
+		</p>
+
+		<script>
+			(function () {
+				const DEFAULT_PORT = 9992;
+
+				let settings = {};
+				let snapshot = null;
+				let connected = false;
+
+				const stepsEl = document.getElementById("steps");
+				const statusEl = document.getElementById("status");
+				const statusTextEl = document.getElementById("status-text");
+				const portEl = document.getElementById("port");
+				const showDestinationEl = document.getElementById("show-destination");
+
+				function steps() {
+					return Array.isArray(settings.steps) ? settings.steps : [];
+				}
+
+				function commit(next) {
+					settings = Object.assign({}, settings, next);
+					window.sdpi.setSettings(settings);
+					render();
+				}
+
+				function mutateSteps(mutator) {
+					const copy = JSON.parse(JSON.stringify(steps()));
+					mutator(copy);
+					commit({ steps: copy });
+				}
+
+				function portOptions(kind, selected) {
+					const ports = snapshot ? snapshot[kind] : null;
+					if (!ports || ports.length === 0) {
+						// Falling back to raw indices keeps a key editable when
+						// the app is closed, rather than blocking configuration
+						// on the router being reachable.
+						const label = kind === "inputs" ? "Source" : "Destination";
+						return (
+							'<option value="' +
+							selected +
+							'">' +
+							label +
+							" " +
+							(Number(selected) + 1) +
+							"</option>"
+						);
+					}
+					return ports
+						.map(function (port) {
+							return (
+								'<option value="' +
+								port.index +
+								'"' +
+								(port.index === selected ? " selected" : "") +
+								">" +
+								port.number +
+								". " +
+								escapeHTML(port.name) +
+								"</option>"
+							);
+						})
+						.join("");
+				}
+
+				function escapeHTML(value) {
+					return String(value).replace(/[&<>"]/g, function (character) {
+						return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[character];
+					});
+				}
+
+				function render() {
+					statusEl.className = "status " + (connected ? "online" : "offline");
+					statusTextEl.textContent = connected
+						? snapshot
+							? snapshot.router.name +
+								" — " +
+								snapshot.router.inputCount +
+								"×" +
+								snapshot.router.outputCount +
+								" (" +
+								snapshot.connection +
+								")"
+							: "Connected to Videohub On-Set"
+						: "Videohub On-Set is not running — start it to see port names";
+
+					showDestinationEl.checked = settings.showDestination === true;
+					if (document.activeElement !== portEl) {
+						portEl.value = window.sdpi.globalSettings.port || DEFAULT_PORT;
+					}
+
+					const list = steps();
+					if (list.length === 0) {
+						stepsEl.innerHTML = '<div class="empty">No steps yet. Add one to make this key route.</div>';
+						return;
+					}
+
+					stepsEl.innerHTML = list
+						.map(function (step, stepIndex) {
+							const crosspoints = Array.isArray(step.crosspoints) ? step.crosspoints : [];
+							const rows = crosspoints
+								.map(function (crosspoint, crosspointIndex) {
+									return (
+										'<div class="crosspoint">' +
+										'<select data-step="' +
+										stepIndex +
+										'" data-crosspoint="' +
+										crosspointIndex +
+										'" data-field="input">' +
+										portOptions("inputs", crosspoint.input) +
+										"</select>" +
+										'<span class="arrow">→</span>' +
+										'<select data-step="' +
+										stepIndex +
+										'" data-crosspoint="' +
+										crosspointIndex +
+										'" data-field="output">' +
+										portOptions("outputs", crosspoint.output) +
+										"</select>" +
+										'<button class="danger" data-remove-crosspoint="' +
+										stepIndex +
+										":" +
+										crosspointIndex +
+										'" title="Remove">−</button>' +
+										"</div>"
+									);
+								})
+								.join("");
+
+							return (
+								'<div class="step">' +
+								'<div class="step-head"><strong>Step ' +
+								(stepIndex + 1) +
+								"</strong>" +
+								'<button class="danger" data-remove-step="' +
+								stepIndex +
+								'">Remove step</button></div>' +
+								rows +
+								'<div class="row"><label class="field">Label</label>' +
+								'<input type="text" data-title="' +
+								stepIndex +
+								'" placeholder="Auto from source name" value="' +
+								escapeHTML(step.title || "") +
+								'" /></div>' +
+								'<div class="row"><button data-add-crosspoint="' +
+								stepIndex +
+								'">Add crosspoint</button></div>' +
+								"</div>"
+							);
+						})
+						.join("");
+				}
+
+				stepsEl.addEventListener("change", function (event) {
+					const target = event.target;
+					if (target.dataset.field) {
+						const stepIndex = Number(target.dataset.step);
+						const crosspointIndex = Number(target.dataset.crosspoint);
+						const value = Number(target.value);
+						mutateSteps(function (list) {
+							list[stepIndex].crosspoints[crosspointIndex][target.dataset.field] = value;
+						});
+					} else if (target.dataset.title !== undefined) {
+						const stepIndex = Number(target.dataset.title);
+						const value = target.value;
+						mutateSteps(function (list) {
+							list[stepIndex].title = value;
+						});
+					}
+				});
+
+				stepsEl.addEventListener("click", function (event) {
+					const target = event.target;
+					if (target.dataset.addCrosspoint !== undefined) {
+						const stepIndex = Number(target.dataset.addCrosspoint);
+						mutateSteps(function (list) {
+							list[stepIndex].crosspoints.push({ input: 0, output: 0 });
+						});
+					} else if (target.dataset.removeCrosspoint !== undefined) {
+						const parts = target.dataset.removeCrosspoint.split(":");
+						mutateSteps(function (list) {
+							list[Number(parts[0])].crosspoints.splice(Number(parts[1]), 1);
+						});
+					} else if (target.dataset.removeStep !== undefined) {
+						const stepIndex = Number(target.dataset.removeStep);
+						mutateSteps(function (list) {
+							list.splice(stepIndex, 1);
+						});
+					}
+				});
+
+				document.getElementById("add-step").addEventListener("click", function () {
+					mutateSteps(function (list) {
+						list.push({ crosspoints: [{ input: 0, output: 0 }] });
+					});
+				});
+
+				showDestinationEl.addEventListener("change", function () {
+					commit({ showDestination: showDestinationEl.checked });
+				});
+
+				document.getElementById("reconnect").addEventListener("click", function () {
+					const port = Number(portEl.value);
+					if (Number.isInteger(port) && port > 0 && port < 65536) {
+						window.sdpi.setGlobalSettings(
+							Object.assign({}, window.sdpi.globalSettings, { port: port })
+						);
+						window.sdpi.sendToPlugin({ request: "snapshot" });
+					}
+				});
+
+				window.sdpi.onSettings(function (value) {
+					settings = value || {};
+					render();
+				});
+
+				window.sdpi.onGlobalSettings(function () {
+					render();
+				});
+
+				window.sdpi.onPluginMessage(function (message) {
+					if (message.event === "snapshot") {
+						snapshot = message.snapshot || null;
+						connected = message.connected === true;
+						render();
+					}
+				});
+
+				render();
+			})();
+		</script>
+	</body>
+</html>

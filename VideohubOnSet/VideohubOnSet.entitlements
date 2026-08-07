@@ -6,5 +6,9 @@
 	<true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<!-- Required to accept loopback connections from surface controllers
+	     (the Stream Deck plugin) on the local control port. -->
+	<key>com.apple.security.network.server</key>
+	<true/>
 </dict>
 </plist>

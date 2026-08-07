@@ -23,6 +23,10 @@ Written in Swift 5 / SwiftUI, targeting macOS 14+.
   groups. Styles can be copied between tiles; names deliberately cannot, since a
   name belongs to one physical port.
 - **Signal format badges** and destination lock state surfaced on the tiles.
+- **Stream Deck control** — an optional loopback control API lets the bundled
+  Stream Deck plugin drive the router using the same names, colors and salvos,
+  replacing Bitfocus Companion for routing. See
+  [`streamdeck/README.md`](streamdeck/README.md).
 
 ## Layout
 
@@ -36,7 +40,8 @@ VideohubOnSet/
   Support/    Icons, port presentation, menu commands
 VideohubOnSetTests/   Unit tests, incl. a live-hardware integration suite
 TestSupport/          mock_videohub_server.py — development-only TCP stub
-script/               build_and_run.sh
+script/               build_and_run.sh, import_companion_config.py
+streamdeck/           Stream Deck plugin (TypeScript)
 Resources/            AppIcon.iconset (used by the SwiftPM bundle path)
 ```
 

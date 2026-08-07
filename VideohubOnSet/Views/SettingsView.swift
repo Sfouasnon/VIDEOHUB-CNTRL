@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Bindable var store: RouterStore
+    @Bindable var bridge: ControlBridge
 
     var body: some View {
         Form {
@@ -71,12 +72,70 @@ struct SettingsView: View {
                 Toggle("Confirm before TAKE", isOn: $store.confirmBeforeTake)
                     .accessibilityIdentifier("settings-confirm-toggle")
             }
+
+            Section {
+                Toggle("Enable surface control", isOn: $bridge.isEnabled)
+                    .accessibilityIdentifier("settings-control-toggle")
+
+                if bridge.isEnabled {
+                    LabeledContent("Port") {
+                        TextField(
+                            "Port",
+                            value: $bridge.port,
+                            format: .number.grouping(.never)
+                        )
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 80)
+                        .onSubmit { bridge.restart() }
+                        .accessibilityIdentifier("settings-control-port-field")
+                    }
+
+                    if bridge.hasUnappliedPortChange {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.triangle.2.circlepath")
+                            Text("Restart to listen on this port")
+                            Spacer()
+                            Button("Restart") { bridge.restart() }
+                                .controlSize(.small)
+                                .accessibilityIdentifier("settings-control-restart-button")
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                    }
+
+                    LabeledContent("Status", value: bridge.status.summary)
+                        .foregroundStyle(statusColor)
+                        .accessibilityIdentifier("settings-control-status")
+
+                    LabeledContent(
+                        "Connected surfaces",
+                        value: "\(bridge.connectedSurfaces)"
+                    )
+                    .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Stream Deck & Surface Control")
+            } footer: {
+                Text("Lets the Stream Deck plugin drive this router using the "
+                    + "names, colors, icons, and salvos configured here. "
+                    + "Listens on 127.0.0.1 only — never on the network.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 470)
+        .frame(width: 460, height: 560)
         .padding(8)
         .onAppear { store.startDiscovery() }
         .onDisappear { store.stopDiscovery() }
+    }
+
+    private var statusColor: Color {
+        switch bridge.status {
+        case .running: .green
+        case .failed: .orange
+        case .starting, .disabled: .secondary
+        }
     }
 
     private func isCurrent(_ device: DiscoveredVideohub) -> Bool {

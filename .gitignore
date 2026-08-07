@@ -16,3 +16,9 @@ xcuserdata/
 # Test helper cache
 __pycache__/
 *.pyc
+
+# Stream Deck plugin build output
+/streamdeck/node_modules/
+/streamdeck/com.videohubonset.control.sdPlugin/bin/
+/streamdeck/com.videohubonset.control.sdPlugin/logs/
+/streamdeck/*.streamDeckPlugin

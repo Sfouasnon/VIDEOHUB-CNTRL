@@ -1,13 +1,13 @@
 {
-  "name": "videohub-onset-streamdeck",
+  "name": "videohub-cntrl-streamdeck",
   "version": "0.1.0",
-  "description": "Stream Deck plugin that routes a Blackmagic Videohub through the Videohub On-Set app.",
+  "description": "Stream Deck plugin that routes a Blackmagic Videohub through the Videohub CNTRL app.",
   "type": "module",
   "private": true,
   "license": "MIT",
   "scripts": {
     "build": "rollup -c",
-    "watch": "rollup -c -w --watch.onEnd=\"streamdeck restart com.videohubonset.control\"",
+    "watch": "rollup -c -w --watch.onEnd=\"streamdeck restart com.videohubcntrl.control\"",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

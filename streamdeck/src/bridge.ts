@@ -11,7 +11,7 @@ type PendingCommand = {
 };
 
 /**
- * The plugin's single connection to Videohub On-Set.
+ * The plugin's single connection to Videohub CNTRL.
  *
  * One connection is shared by every key, because the interesting state — which
  * source is on which destination — is global to the router. Per-key
@@ -82,7 +82,7 @@ class Bridge {
 		socket.on("connect", () => {
 			this.attempt = 0;
 			this._connected = true;
-			streamDeck.logger.info(`Connected to Videohub On-Set on 127.0.0.1:${this._port}`);
+			streamDeck.logger.info(`Connected to Videohub CNTRL on 127.0.0.1:${this._port}`);
 		});
 
 		socket.on("data", (chunk) => this.consume(chunk));
@@ -98,7 +98,7 @@ class Bridge {
 			this.socket = null;
 			this._connected = false;
 			this.buffer = "";
-			this.failAllPending("Videohub On-Set is not running");
+			this.failAllPending("Videohub CNTRL is not running");
 			this.publish(null);
 			this.scheduleReconnect();
 		});
@@ -159,7 +159,7 @@ class Bridge {
 		try {
 			event = JSON.parse(line) as ServerEvent;
 		} catch {
-			streamDeck.logger.warn("Discarded unparseable frame from Videohub On-Set");
+			streamDeck.logger.warn("Discarded unparseable frame from Videohub CNTRL");
 			return;
 		}
 
@@ -170,7 +170,7 @@ class Bridge {
 					// risks routing the wrong source, which is worse on set
 					// than a plugin that visibly does nothing.
 					streamDeck.logger.error(
-						`Videohub On-Set speaks protocol ${event.protocolVersion}, this plugin speaks ${PROTOCOL_VERSION}. Update whichever is older.`
+						`Videohub CNTRL speaks protocol ${event.protocolVersion}, this plugin speaks ${PROTOCOL_VERSION}. Update whichever is older.`
 					);
 					this.shutdown();
 				}
@@ -192,7 +192,7 @@ class Bridge {
 			}
 
 			case "notice":
-				streamDeck.logger.info(`Videohub On-Set: ${event.message}`);
+				streamDeck.logger.info(`Videohub CNTRL: ${event.message}`);
 				break;
 		}
 	}
@@ -231,14 +231,14 @@ class Bridge {
 	private send(payload: Record<string, unknown>): Promise<string | null> {
 		const socket = this.socket;
 		if (!socket || !this._connected) {
-			return Promise.resolve("Videohub On-Set is not running");
+			return Promise.resolve("Videohub CNTRL is not running");
 		}
 
 		const id = String(this.nextRequestID++);
 		return new Promise<string | null>((resolve) => {
 			const timer = setTimeout(() => {
 				this.pending.delete(id);
-				resolve("Videohub On-Set did not respond");
+				resolve("Videohub CNTRL did not respond");
 			}, Bridge.COMMAND_TIMEOUT_MS);
 
 			this.pending.set(id, { resolve, timer });
@@ -250,7 +250,7 @@ class Bridge {
 				if (entry) {
 					this.pending.delete(id);
 					clearTimeout(entry.timer);
-					resolve("Could not reach Videohub On-Set");
+					resolve("Could not reach Videohub CNTRL");
 				}
 			});
 		});

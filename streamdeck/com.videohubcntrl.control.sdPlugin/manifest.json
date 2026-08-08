@@ -1,0 +1,62 @@
+{
+	"$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+	"UUID": "com.videohubcntrl.control",
+	"Name": "Videohub CNTRL",
+	"Version": "0.1.0.0",
+	"Author": "Stephen Fouasnon",
+	"Description": "Route a Blackmagic Videohub from your Stream Deck, using the port names, colors and salvos configured in the Videohub CNTRL app.",
+	"Category": "Videohub CNTRL",
+	"CategoryIcon": "imgs/plugin/category",
+	"Icon": "imgs/plugin/marketplace",
+	"CodePath": "bin/plugin.js",
+	"SDKVersion": 2,
+	"Software": {
+		"MinimumVersion": "6.6"
+	},
+	"OS": [
+		{
+			"Platform": "mac",
+			"MinimumVersion": "12"
+		},
+		{
+			"Platform": "windows",
+			"MinimumVersion": "10"
+		}
+	],
+	"Nodejs": {
+		"Version": "20",
+		"Debug": "enabled"
+	},
+	"Actions": [
+		{
+			"Name": "Route",
+			"UUID": "com.videohubcntrl.control.route",
+			"Icon": "imgs/actions/route/icon",
+			"Tooltip": "Route one or more sources to destinations. Add steps to cycle on repeat presses.",
+			"PropertyInspectorPath": "ui/route.html",
+			"Controllers": ["Keypad"],
+			"States": [
+				{
+					"Image": "imgs/actions/route/key",
+					"TitleAlignment": "middle",
+					"ShowTitle": false
+				}
+			]
+		},
+		{
+			"Name": "Salvo",
+			"UUID": "com.videohubcntrl.control.salvo",
+			"Icon": "imgs/actions/salvo/icon",
+			"Tooltip": "Fire a salvo stored in the Videohub CNTRL app.",
+			"PropertyInspectorPath": "ui/salvo.html",
+			"Controllers": ["Keypad"],
+			"States": [
+				{
+					"Image": "imgs/actions/salvo/key",
+					"TitleAlignment": "middle",
+					"ShowTitle": false
+				}
+			]
+		}
+	]
+}

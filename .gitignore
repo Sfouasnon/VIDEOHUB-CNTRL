@@ -19,6 +19,6 @@ __pycache__/
 
 # Stream Deck plugin build output
 /streamdeck/node_modules/
-/streamdeck/com.videohubonset.control.sdPlugin/bin/
-/streamdeck/com.videohubonset.control.sdPlugin/logs/
+/streamdeck/com.videohubcntrl.control.sdPlugin/bin/
+/streamdeck/com.videohubcntrl.control.sdPlugin/logs/
 /streamdeck/*.streamDeckPlugin

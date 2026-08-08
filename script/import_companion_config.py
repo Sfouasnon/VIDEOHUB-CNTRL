@@ -3,7 +3,7 @@
 
 A Companion routing page is a destination, and each key on it is a source. That
 means the config already contains what an operator would otherwise retype into
-Videohub On-Set by hand: a human name for every port, the color they chose for
+Videohub CNTRL by hand: a human name for every port, the color they chose for
 it, and — via the page name — a name for the destination too. This reads that
 back out and writes it into the app's TileCustomizations.json.
 
@@ -70,7 +70,27 @@ ICON_RULES = [
     (r"monitor|\bmon\b|flanders|smallhd|display|\btv\b|desk|screen", "monitor"),
 ]
 
-DEFAULT_STORE = pathlib.Path.home() / "Library" / "Application Support" / "Videohub On-Set" / "TileCustomizations.json"
+BUNDLE_ID = "com.videohubcntrl.VideohubCNTRL"
+SUPPORT_FOLDER = "Videohub CNTRL"
+STORE_FILENAME = "TileCustomizations.json"
+
+
+def default_store() -> pathlib.Path:
+    """Where the app actually keeps TileCustomizations.json.
+
+    The app is sandboxed, so its "Application Support" is redirected into
+    ~/Library/Containers/<bundle id>/Data. Writing to the plain
+    ~/Library/Application Support path would succeed and then be invisible to
+    the app, which is the most confusing possible outcome — so the container is
+    preferred whenever it exists.
+    """
+    container = (
+        pathlib.Path.home() / "Library" / "Containers" / BUNDLE_ID
+        / "Data" / "Library" / "Application Support" / SUPPORT_FOLDER
+    )
+    if container.parent.parent.parent.exists():
+        return container / STORE_FILENAME
+    return pathlib.Path.home() / "Library" / "Application Support" / SUPPORT_FOLDER / STORE_FILENAME
 
 
 def load_config(path: pathlib.Path) -> dict:
@@ -276,9 +296,15 @@ def main() -> int:
              "Use --list-connections to see them.",
     )
     parser.add_argument("--list-connections", action="store_true", help="List Videohub connections and exit")
-    parser.add_argument("--store", type=pathlib.Path, default=DEFAULT_STORE, help="TileCustomizations.json to update")
+    parser.add_argument(
+        "--store", type=pathlib.Path, default=None,
+        help="TileCustomizations.json to update (defaults to the app's sandbox container)",
+    )
     parser.add_argument("--write", action="store_true", help="Actually write; otherwise prints a preview")
     args = parser.parse_args()
+
+    if args.store is None:
+        args.store = default_store()
 
     config = load_config(args.config)
 
@@ -327,7 +353,7 @@ def main() -> int:
     args.store.parent.mkdir(parents=True, exist_ok=True)
     args.store.write_text(json.dumps(document, indent=2, sort_keys=True))
     print(f"\nWrote {len(entries)} entries for {router} to {args.store}")
-    print("Restart Videohub On-Set to pick them up.")
+    print("Restart Videohub CNTRL to pick them up.")
     return 0
 
 

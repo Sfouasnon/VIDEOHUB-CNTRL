@@ -33,29 +33,29 @@ let testLinkerSettings: [LinkerSetting] = usesCommandLineToolsTestingFramework
     : []
 
 let package = Package(
-    name: "VideohubOnSet",
+    name: "VideohubCNTRL",
     platforms: [
         .macOS(.v14)
     ],
     products: [
         .executable(
-            name: "VideohubOnSet",
-            targets: ["VideohubOnSet"]
+            name: "VideohubCNTRL",
+            targets: ["VideohubCNTRL"]
         )
     ],
     targets: [
         .executableTarget(
-            name: "VideohubOnSet",
-            path: "VideohubOnSet",
+            name: "VideohubCNTRL",
+            path: "VideohubCNTRL",
             // The asset catalog is consumed by the Xcode app target. SwiftPM
             // builds a bare executable with no bundle, so it would only warn
             // about an unhandled resource.
-            exclude: ["VideohubOnSet.entitlements", "Assets.xcassets"]
+            exclude: ["VideohubCNTRL.entitlements", "Assets.xcassets"]
         ),
         .testTarget(
-            name: "VideohubOnSetTests",
-            dependencies: ["VideohubOnSet"],
-            path: "VideohubOnSetTests",
+            name: "VideohubCNTRLTests",
+            dependencies: ["VideohubCNTRL"],
+            path: "VideohubCNTRLTests",
             swiftSettings: testSwiftSettings,
             linkerSettings: testLinkerSettings
         )

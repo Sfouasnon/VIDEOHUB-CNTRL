@@ -2,14 +2,14 @@
 set -euo pipefail
 
 MODE="${1:-run}"
-DISPLAY_NAME="Videohub On-Set"
-EXECUTABLE_NAME="VideohubOnSet"
-BUNDLE_ID="com.videohubonset.VideohubOnSet"
+DISPLAY_NAME="Videohub CNTRL"
+EXECUTABLE_NAME="VideohubCNTRL"
+BUNDLE_ID="com.videohubcntrl.VideohubCNTRL"
 MIN_SYSTEM_VERSION="14.0"
-SCHEME_NAME="VideohubOnSet"
+SCHEME_NAME="VideohubCNTRL"
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PROJECT_PATH="$ROOT_DIR/VideohubOnSet.xcodeproj"
+PROJECT_PATH="$ROOT_DIR/VideohubCNTRL.xcodeproj"
 XCODE_DERIVED_DATA="$ROOT_DIR/.build/xcode-derived-data"
 DIST_DIR="$ROOT_DIR/dist"
 APP_BUNDLE=""
@@ -124,11 +124,11 @@ stage_swiftpm_bundle() {
   if [[ -f "$APP_BUNDLE/Contents/Resources/AppIcon.icns" ]]; then
     /usr/bin/plutil -insert CFBundleIconFile -string AppIcon "$APP_BUNDLE/Contents/Info.plist"
   fi
-  /usr/bin/plutil -insert NSLocalNetworkUsageDescription -string "Videohub On-Set connects to Blackmagic Design Videohub routers on your local network." "$APP_BUNDLE/Contents/Info.plist"
+  /usr/bin/plutil -insert NSLocalNetworkUsageDescription -string "Videohub CNTRL connects to Blackmagic Design Videohub routers on your local network." "$APP_BUNDLE/Contents/Info.plist"
 
   if command -v codesign >/dev/null 2>&1; then
     codesign --force --sign - \
-      --entitlements "$ROOT_DIR/VideohubOnSet/VideohubOnSet.entitlements" \
+      --entitlements "$ROOT_DIR/VideohubCNTRL/VideohubCNTRL.entitlements" \
       "$APP_BUNDLE"
   fi
 

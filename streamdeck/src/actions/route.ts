@@ -82,7 +82,7 @@ function portColor(snapshot: Snapshot | null, index: number): string | undefined
  * lights up whichever variant is live — which is what the operator actually
  * needs to see.
  */
-@action({ UUID: "com.videohubonset.control.route" })
+@action({ UUID: "com.videohubcntrl.control.route" })
 export class RouteAction extends SingletonAction<RouteSettings> {
 	constructor() {
 		super();

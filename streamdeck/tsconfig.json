@@ -11,7 +11,7 @@
     "forceConsistentCasingInFileNames": true,
     "sourceMap": true,
     "rootDir": "src",
-    "outDir": "com.videohubonset.control.sdPlugin/bin"
+    "outDir": "com.videohubcntrl.control.sdPlugin/bin"
   },
   "include": ["src/**/*.ts"]
 }

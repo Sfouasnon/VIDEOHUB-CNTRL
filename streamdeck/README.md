@@ -1,4 +1,4 @@
-# Videohub On-Set — Stream Deck plugin
+# Videohub CNTRL — Stream Deck plugin
 
 Routes a Blackmagic Videohub from a Stream Deck, replacing a Companion install
 for routing work.
@@ -6,7 +6,7 @@ for routing work.
 ## How it fits together
 
 ```
-Videohub ──TCP 9990──▶ Videohub On-Set.app ──TCP 9992 (loopback)──▶ Stream Deck plugin
+Videohub ──TCP 9990──▶ Videohub CNTRL.app ──TCP 9992 (loopback)──▶ Stream Deck plugin
 ```
 
 The plugin never opens its own connection to the router. The app already owns
@@ -19,7 +19,7 @@ dim and show a slash rather than firing blind.
 
 ## Setup
 
-1. In Videohub On-Set: **Settings → Stream Deck & Surface Control → Enable
+1. In Videohub CNTRL: **Settings → Stream Deck & Surface Control → Enable
    surface control**. Note the port (default `9992`).
 2. Build and install the plugin:
 
@@ -32,7 +32,7 @@ dim and show a slash rather than firing blind.
    `npm run watch` installs it into Stream Deck and reloads on every change.
    Requires the [Stream Deck CLI](https://docs.elgato.com/streamdeck/cli/intro)
    (`npm install -g @elgato/cli`) and Stream Deck 6.6+.
-3. The plugin's actions appear under **Videohub On-Set** in the actions list.
+3. The plugin's actions appear under **Videohub CNTRL** in the actions list.
 
 ## Actions
 
@@ -89,7 +89,7 @@ Key layout is not imported — assign actions to keys in Stream Deck.
 ## Protocol
 
 Newline-delimited JSON over loopback TCP. `src/protocol.ts` and the app's
-`VideohubOnSet/Services/ControlProtocol.swift` are two halves of one contract
+`VideohubCNTRL/Services/ControlProtocol.swift` are two halves of one contract
 and must change together; `PROTOCOL_VERSION` makes a mismatch fail loudly at
 connect rather than quietly at the crosspoint.
 
@@ -101,4 +101,4 @@ npm run build       # rollup, writes the .sdPlugin/bin
 streamdeck dev      # enables the property inspector debugger on :23654
 ```
 
-Plugin logs land in `com.videohubonset.control.sdPlugin/logs/`.
+Plugin logs land in `com.videohubcntrl.control.sdPlugin/logs/`.

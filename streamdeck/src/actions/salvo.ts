@@ -28,7 +28,7 @@ export type SalvoSettings = {
  * Holding only the identifier means editing the salvo in the app updates every
  * key bound to it.
  */
-@action({ UUID: "com.videohubonset.control.salvo" })
+@action({ UUID: "com.videohubcntrl.control.salvo" })
 export class SalvoAction extends SingletonAction<SalvoSettings> {
 	constructor() {
 		super();

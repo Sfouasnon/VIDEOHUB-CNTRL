@@ -32,18 +32,11 @@ final class CustomizationStore {
     init(fileURL: URL? = nil, fileManager: FileManager = .default) {
         self.fileManager = fileManager
         self.fileURL = fileURL ?? Self.defaultFileURL(fileManager: fileManager)
-        // Only when using the default location: an injected URL is a test or a
-        // QA session, and adopting production data into either would be wrong.
-        if fileURL == nil {
-            LegacyStoreMigration.adoptLegacyFile(named: Self.fileName, fileManager: fileManager)
-        }
         loadFromDisk()
     }
 
     static func defaultFileURL(fileManager: FileManager = .default) -> URL {
-        LegacyStoreMigration
-            .supportFolder(fileManager: fileManager, named: LegacyStoreMigration.currentFolderName)
-            .appendingPathComponent(fileName, isDirectory: false)
+        StoreLocation.fileURL(named: fileName, fileManager: fileManager)
     }
 
     subscript(key: PortCustomizationKey) -> PortCustomization? {
@@ -87,6 +80,39 @@ final class CustomizationStore {
         mutation(&customization)
         return commitMutation {
             customizations[key] = customization.normalized()
+        }
+    }
+
+    /// Swaps every entry belonging to one router in a single write.
+    ///
+    /// Customizations are stored per router, so importing a cart's Companion
+    /// config must not disturb the tiles already tuned on a different one.
+    /// Replacement rather than merge is deliberate: a re-import is the operator
+    /// saying the export is now the truth for this router, and a merge would
+    /// leave orphaned names from a previous cart layout behind.
+    @discardableResult
+    func replaceCustomizations(
+        forRouter routerIdentity: String,
+        with replacements: [PortCustomizationKey: PortCustomization]
+    ) -> Bool {
+        let identity = routerIdentity.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !identity.isEmpty else {
+            lastError = .invalidKey
+            return false
+        }
+
+        // A key aimed at another router would be written but never read back,
+        // so refuse the whole batch rather than persisting something invisible.
+        guard replacements.keys.allSatisfy({ $0.isValid && $0.routerIdentity == identity }) else {
+            lastError = .invalidKey
+            return false
+        }
+
+        return commitMutation {
+            customizations = customizations.filter { $0.key.routerIdentity != identity }
+            for (key, customization) in replacements {
+                customizations[key] = customization.normalized()
+            }
         }
     }
 

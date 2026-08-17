@@ -10,5 +10,9 @@
 	     (the Stream Deck plugin) on the local control port. -->
 	<key>com.apple.security.network.server</key>
 	<true/>
+	<!-- Required to read a Companion export the operator picks in the import
+	     panel. Read-only: the app never writes back to the chosen file. -->
+	<key>com.apple.security.files.user-selected.read-only</key>
+	<true/>
 </dict>
 </plist>

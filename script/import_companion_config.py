@@ -11,9 +11,15 @@ Only labels and appearance are imported. Crosspoints are not: a Companion key
 is a routing action, not a saved layout, and the app already learns live routes
 from the router itself.
 
-Deliberately a script rather than a feature in the app. A Companion export is
-something you import once when you move a cart over, not something the app
-needs to know how to parse forever.
+The app can do this too — Settings > Tile Names > "Import from Companion..." —
+and that is the route most operators should take, since it previews the result
+before touching anything. This script stays for batch and scripted use: several
+carts in one pass, or an import that has to run without the app open.
+
+The rules live in two places as a result. VideohubCNTRL/Services/
+CompanionConfigImport.swift is a direct port of the logic below, and
+VideohubCNTRLTests/CompanionConfigImportTests.swift asserts the two agree
+against a shared fixture. A change here needs the same change there.
 
 Usage:
     ./script/import_companion_config.py CONFIG.companionconfig --router 172.20.114.84

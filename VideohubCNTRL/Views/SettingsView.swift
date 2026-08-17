@@ -1,8 +1,15 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @Bindable var store: RouterStore
     @Bindable var bridge: ControlBridge
+
+    @State private var isChoosingCompanionConfig = false
+    @State private var companionPreview: CompanionConfigImport.Preview?
+    @State private var companionFileURL: URL?
+    @State private var companionError: String?
+    @State private var companionSummary: String?
 
     var body: some View {
         Form {
@@ -122,12 +129,157 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
+
+            companionSection
         }
         .formStyle(.grouped)
         .frame(width: 460, height: 560)
         .padding(8)
         .onAppear { store.startDiscovery() }
         .onDisappear { store.stopDiscovery() }
+        .fileImporter(
+            isPresented: $isChoosingCompanionConfig,
+            allowedContentTypes: Self.companionConfigTypes,
+            allowsMultipleSelection: false
+        ) { result in
+            handleCompanionSelection(result)
+        }
+        .sheet(item: $companionPreview) { preview in
+            CompanionImportSheet(
+                preview: preview,
+                fileName: companionFileURL?.lastPathComponent ?? "Companion export",
+                existingCustomizationCount: existingCustomizationCount,
+                onSelectConnection: { reparseCompanion(connectionID: $0) },
+                onApply: applyCompanionImport,
+                onCancel: dismissCompanionPreview
+            )
+        }
+        .alert(
+            "Import Failed",
+            isPresented: Binding(
+                get: { companionError != nil },
+                set: { if !$0 { companionError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { companionError = nil }
+        } message: {
+            Text(companionError ?? "")
+        }
+    }
+
+    // MARK: - Companion import
+
+    /// Companion writes `.companionconfig`, which is not a registered system
+    /// type, so it is declared here by filename extension. `.json` is accepted
+    /// too because older exports are plain JSON.
+    private static let companionConfigTypes: [UTType] = {
+        var types: [UTType] = [.json, .data]
+        if let companion = UTType(filenameExtension: "companionconfig") {
+            types.insert(companion, at: 0)
+        }
+        return types
+    }()
+
+    private var canImportCompanion: Bool {
+        store.connectionState == .connected
+    }
+
+    private var existingCustomizationCount: Int {
+        store.customizationStore.customizations.keys
+            .filter { $0.routerIdentity == store.routerIdentity }
+            .count
+    }
+
+    @ViewBuilder
+    private var companionSection: some View {
+        Section {
+            Button("Import from Companion…") {
+                companionSummary = nil
+                isChoosingCompanionConfig = true
+            }
+            .disabled(!canImportCompanion)
+            .accessibilityIdentifier("settings-companion-import-button")
+
+            if let companionSummary {
+                Label(companionSummary, systemImage: "checkmark.circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.green)
+            }
+        } header: {
+            Text("Tile Names")
+        } footer: {
+            Text(companionFooterText)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    /// Built as a plain `String` rather than inline in the `Text`: a ternary
+    /// wrapping concatenated literals inside a view initializer is one of the
+    /// expressions the Swift type checker struggles with.
+    private var companionFooterText: String {
+        guard canImportCompanion else {
+            return "Connect to a router first — imported names are stored per router."
+        }
+        var text = "Reads port names, colors and icons out of a Bitfocus Companion export "
+        text += "and applies them to this router's tiles. "
+        text += "You get a preview before anything changes."
+        return text
+    }
+
+    private func handleCompanionSelection(_ result: Result<[URL], Error>) {
+        switch result {
+        case let .success(urls):
+            guard let url = urls.first else { return }
+            companionFileURL = url
+            reparseCompanion(connectionID: nil)
+        case let .failure(error):
+            companionError = error.localizedDescription
+        }
+    }
+
+    /// Parses, or re-parses after the operator narrows to one connection.
+    private func reparseCompanion(connectionID: String?) {
+        guard let url = companionFileURL else { return }
+
+        // A file chosen through the panel arrives security-scoped; without
+        // this the sandbox refuses the read even though the user picked it.
+        let needsScope = url.startAccessingSecurityScopedResource()
+        defer { if needsScope { url.stopAccessingSecurityScopedResource() } }
+
+        do {
+            companionPreview = try CompanionConfigImport.preview(
+                fileURL: url,
+                routerIdentity: store.routerIdentity,
+                connectionID: connectionID
+            )
+        } catch {
+            companionPreview = nil
+            companionError = error.localizedDescription
+        }
+    }
+
+    private func applyCompanionImport(_ preview: CompanionConfigImport.Preview) {
+        let applied = store.customizationStore.replaceCustomizations(
+            forRouter: preview.routerIdentity,
+            with: preview.customizations
+        )
+
+        if applied {
+            let sourceCount: Int = preview.sources.count
+            let destinationCount: Int = preview.destinations.count
+            companionSummary = "Imported \(sourceCount) sources and \(destinationCount) destinations."
+        } else {
+            companionError = store.customizationStore.lastError?.localizedDescription
+                ?? "The customizations could not be saved."
+        }
+
+        dismissCompanionPreview()
+    }
+
+    private func dismissCompanionPreview() {
+        companionPreview = nil
+        companionFileURL = nil
     }
 
     private var statusColor: Color {

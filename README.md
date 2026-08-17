@@ -27,6 +27,12 @@ Written in Swift 5 / SwiftUI, targeting macOS 14+.
   Stream Deck plugin drive the router using the same names, colors and salvos,
   replacing Bitfocus Companion for routing. See
   [`streamdeck/README.md`](streamdeck/README.md).
+- **Companion import** — Settings ▸ Tile Names ▸ *Import from Companion…* reads
+  port names, colors and icons out of a `.companionconfig` export and applies
+  them to the connected router, with a preview first. The same rules are
+  available headlessly via
+  [`script/import_companion_config.py`](script/import_companion_config.py) for
+  batch or scripted use; the two must stay in agreement.
 
 ## Layout
 
@@ -34,12 +40,14 @@ Written in Swift 5 / SwiftUI, targeting macOS 14+.
 VideohubCNTRL/
   App/        SwiftUI app entry point and AppDelegate
   Models/     PortNumber, Route, Salvo, VideoInput/Output, TileStyle, …
-  Services/   VideohubClient (TCP), VideohubProtocolParser, VideohubDiscovery
+  Services/   VideohubClient (TCP), VideohubProtocolParser, VideohubDiscovery,
+              ControlServer, CompanionConfigImport
   Stores/     RouterStore, SalvoStore, CustomizationStore (@Observable)
   Views/      RouterGridView, SourceTile, DestinationTile, ActionPanel, …
-  Support/    Icons, port presentation, menu commands
+  Support/    Icons, port presentation, store location, menu commands
 VideohubCNTRLTests/   Unit tests, incl. a live-hardware integration suite
 TestSupport/          mock_videohub_server.py — development-only TCP stub
+                      make_companion_fixture.py — regenerates the import fixture
 script/               build_and_run.sh, import_companion_config.py
 streamdeck/           Stream Deck plugin (TypeScript)
 Resources/            AppIcon.iconset (used by the SwiftPM bundle path)
@@ -82,26 +90,6 @@ Debug builds also accept development flags:
 --window-size W H       # fixed window size
 --qa-session NAME       # isolated UserDefaults + customization store
 ```
-
-## Upgrading from "Videohub On-Set"
-
-The app was renamed from Videohub On-Set to Videohub CNTRL. That changed the
-bundle identifier, which moves the macOS sandbox container — and a sandboxed app
-cannot read another app's container, so the app can't migrate itself.
-
-Tile names and salvos are carried across automatically *within* a container. To
-bring settings over from the old build:
-
-```bash
-./script/build_and_run.sh                      # launch once so the new container exists
-./script/migrate_from_videohub_onset.sh        # preview
-./script/migrate_from_videohub_onset.sh --write
-```
-
-It copies rather than moves, and refuses to overwrite anything already saved
-under the new name, so it is safe to run twice. The old container is left intact
-at `~/Library/Containers/com.videohubonset.VideohubOnSet` — delete it once you're
-satisfied nothing is missing.
 
 ## Network access
 

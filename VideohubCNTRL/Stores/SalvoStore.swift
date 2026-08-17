@@ -37,16 +37,11 @@ final class SalvoStore {
     init(fileURL: URL? = nil, fileManager: FileManager = .default) {
         self.fileManager = fileManager
         self.fileURL = fileURL ?? Self.defaultFileURL(fileManager: fileManager)
-        if fileURL == nil {
-            LegacyStoreMigration.adoptLegacyFile(named: Self.fileName, fileManager: fileManager)
-        }
         loadFromDisk()
     }
 
     static func defaultFileURL(fileManager: FileManager = .default) -> URL {
-        LegacyStoreMigration
-            .supportFolder(fileManager: fileManager, named: LegacyStoreMigration.currentFolderName)
-            .appendingPathComponent(fileName, isDirectory: false)
+        StoreLocation.fileURL(named: fileName, fileManager: fileManager)
     }
 
     func salvos(forRouter routerIdentity: String) -> [Salvo] {

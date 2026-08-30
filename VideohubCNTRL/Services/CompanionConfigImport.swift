@@ -475,7 +475,7 @@ enum CompanionConfigImport {
         // Near-black is Companion's default background, not a deliberate
         // choice, so it must not drag every port onto the same dark accent.
         let brightness: Int = red + green + blue
-        guard brightness >= 40 else { return nil }
+        guard brightness > 48 else { return nil }
 
         var best: PortAccentColor?
         var bestDistance: Int = .max

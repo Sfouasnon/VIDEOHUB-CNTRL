@@ -256,7 +256,7 @@ struct CompanionConfigImportTests {
 
         #expect(customizations.count == preview.entries.count)
         #expect(customizations.keys.allSatisfy { $0.routerIdentity == Self.router })
-        #expect(customizations.keys.allSatisfy(\.isValid))
+        #expect(customizations.keys.allSatisfy { $0.isValid })
 
         let camA = PortCustomizationKey(
             routerIdentity: Self.router, kind: .source, protocolPortIndex: 0
